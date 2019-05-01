@@ -660,6 +660,70 @@ static int sgx_ocall_load_debug(void * pms)
     return 0;
 }
 
+static int sgx_ocall_sched_getaffinity(void * pms)
+{
+    ms_ocall_sched_affinity_t *ms = pms;
+    ODEBUG(OCALL_SCHED_GETAFFINITY, (void *)ms);
+    return INLINE_SYSCALL(sched_getaffinity, 3, ms->pid, ms->cpusetsize,
+                          ms->cpuset);
+}
+
+static int sgx_ocall_sched_setaffinity(void * pms)
+{
+    ms_ocall_sched_affinity_t *ms = pms;
+    ODEBUG(OCALL_SCHED_SETAFFINITY, (void *)ms);
+    return INLINE_SYSCALL(sched_setaffinity, 3, ms->pid, ms->cpusetsize,
+                          ms->cpuset);
+#if 0
+int
+__sched_setaffinity_new (pid_t pid, size_t cpusetsize, const cpu_set_t *cpuset)
+{
+  if (__builtin_expect (__kernel_cpumask_size == 0, 0))
+    {
+      INTERNAL_SYSCALL_DECL (err);
+      int res;
+
+      size_t psize = 128;
+      void *p = alloca (psize);
+
+      while (res = INTERNAL_SYSCALL (sched_getaffinity, err, 3, getpid (),
+				     psize, p),
+	     INTERNAL_SYSCALL_ERROR_P (res, err)
+	     && INTERNAL_SYSCALL_ERRNO (res, err) == EINVAL)
+	p = extend_alloca (p, psize, 2 * psize);
+
+      if (res == 0 || INTERNAL_SYSCALL_ERROR_P (res, err))
+	{
+	  __set_errno (INTERNAL_SYSCALL_ERRNO (res, err));
+	  return -1;
+	}
+
+      __kernel_cpumask_size = res;
+    }
+
+  /* We now know the size of the kernel cpumask_t.  Make sure the user
+     does not request to set a bit beyond that.  */
+  for (size_t cnt = __kernel_cpumask_size; cnt < cpusetsize; ++cnt)
+    if (((char *) cpuset)[cnt] != '\0')
+      {
+        /* Found a nonzero byte.  This means the user request cannot be
+	   fulfilled.  */
+	__set_errno (EINVAL);
+	return -1;
+      }
+
+  int result = INLINE_SYSCALL (sched_setaffinity, 3, pid, cpusetsize, cpuset);
+
+#ifdef RESET_VGETCPU_CACHE
+  if (result != -1)
+    RESET_VGETCPU_CACHE ();
+#endif
+
+  return result;
+}
+#endif
+}
+
 sgx_ocall_fn_t ocall_table[OCALL_NR] = {
         [OCALL_EXIT]            = sgx_ocall_exit,
         [OCALL_PRINT_STRING]    = sgx_ocall_print_string,
@@ -698,6 +762,8 @@ sgx_ocall_fn_t ocall_table[OCALL_NR] = {
         [OCALL_RENAME]          = sgx_ocall_rename,
         [OCALL_DELETE]          = sgx_ocall_delete,
         [OCALL_LOAD_DEBUG]      = sgx_ocall_load_debug,
+        [OCALL_SCHED_GETAFFINITY] = sgx_ocall_sched_getaffinity,
+        [OCALL_SCHED_SETAFFINITY] = sgx_ocall_sched_setaffinity,
     };
 
 #define EDEBUG(code, ms) do {} while (0)

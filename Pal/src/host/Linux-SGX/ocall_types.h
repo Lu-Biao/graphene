@@ -55,6 +55,8 @@ enum {
     OCALL_RENAME,
     OCALL_DELETE,
     OCALL_LOAD_DEBUG,
+    OCALL_SCHED_GETAFFINITY,
+    OCALL_SCHED_SETAFFINITY,
     OCALL_NR,
 };
 
@@ -263,5 +265,41 @@ typedef struct {
 typedef struct {
     unsigned int ms_tid;
 } ms_ocall_schedule_t;
+
+#  define INT_MAX	2147483647
+
+/* Size definition for CPU sets.  */
+# define __OCALL_CPU_SETSIZE	1024
+# define __OCALL_NCPUBITS	    (8 * sizeof (__ocall_cpu_mask))
+
+/* Type for array elements in 'cpu_set_t'.  */
+typedef unsigned long int __ocall_cpu_mask;
+
+/* Basic access functions.  */
+# define __OCALL_CPUELT(cpu) ((cpu) / __OCALL_NCPUBITS)
+# define __OCALL_CPUMASK(cpu) \
+    ((__ocall_cpu_mask) 1 << ((cpu) % __OCALL_NCPUBITS))
+
+# define __OCALL_CPU_ISSET_S(cpu, setsize, cpusetp) \
+    (__extension__ \
+     ({ size_t __cpu = (cpu); \
+      __cpu < 8 * (setsize) \
+      ? ((((const __ocall_cpu_mask *) ((cpusetp)->__bits))[__OCALL_CPUELT (__cpu)] \
+          & __OCALL_CPUMASK (__cpu))) != 0 \
+      : 0; }))
+# define __OCALL_CPU_ISSET(cpu, cpusetp) \
+    __OCALL_CPU_ISSET_S (cpu, sizeof (ms_ocall_cpu_set_t), cpusetp)
+
+/* Data structure to describe CPU mask.  */
+typedef struct
+{
+  __ocall_cpu_mask __bits[__OCALL_CPU_SETSIZE / __OCALL_NCPUBITS];
+} ms_ocall_cpu_set_t;
+
+typedef struct {
+    unsigned int pid;
+    size_t cpusetsize;
+    char* cpuset;
+} ms_ocall_sched_affinity_t;
 
 #pragma pack(pop)

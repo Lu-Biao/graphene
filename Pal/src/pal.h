@@ -29,6 +29,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <linux/types.h>
+typedef  __kernel_pid_t pid_t;
 
 typedef uint64_t      PAL_NUM;
 typedef const char *  PAL_STR;
@@ -36,6 +38,8 @@ typedef void *        PAL_PTR;
 typedef uint32_t      PAL_FLG;
 typedef uint32_t      PAL_IDX;
 typedef bool          PAL_BOL;
+
+
 
 #ifdef IN_PAL
 #include <atomic.h>
@@ -403,6 +407,12 @@ DkThreadExit (void);
 
 PAL_BOL
 DkThreadResume (PAL_HANDLE thread);
+
+int
+DkThreadGetAffinity(pid_t pid, size_t len, void * user_mask_ptr);
+
+int
+DkThreadSetAffinity(pid_t pid, size_t len, void * user_mask_ptr);
 
 /* Exception Handling */
 /* arithmetic error (div-by-zero, floating point exception, etc.) */

@@ -140,6 +140,22 @@ int _DkThreadGetCurrent (PAL_HANDLE * threadHandle)
     return 0;
 }
 
+typedef  __kernel_pid_t pid_t;
+
+int _DkThreadSetAffinity(pid_t pid, size_t len,
+                         void * user_mask_ptr)
+{
+    return ocall_sched_setaffinity(pid, len, user_mask_ptr);
+}
+
+int _DkThreadGetAffinity(pid_t pid, size_t len,
+                         void * user_mask_ptr)
+{
+    return ocall_sched_getaffinity(pid, len, user_mask_ptr);
+}
+
 struct handle_ops thread_ops = {
     /* nothing */
 };
+
+

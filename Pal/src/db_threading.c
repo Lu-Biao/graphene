@@ -30,6 +30,7 @@
 #include "pal_debug.h"
 #include "api.h"
 
+
 /* PAL call DkThreadCreate: create a thread inside the current
    process */
 PAL_HANDLE
@@ -106,4 +107,26 @@ PAL_BOL DkThreadResume (PAL_HANDLE threadHandle)
     }
 
     LEAVE_PAL_CALL_RETURN(PAL_TRUE);
+}
+
+
+int DkThreadGetAffinity(pid_t pid, size_t len,
+                         void * user_mask_ptr)
+{
+    int ret;
+
+    ENTER_PAL_CALL(DkThreadGetAffinity);
+    ret = _DkThreadGetAffinity(pid, len, user_mask_ptr);
+    LEAVE_PAL_CALL_RETURN(ret);
+
+}
+
+int DkThreadSetAffinity(pid_t pid, size_t len,
+                         void * user_mask_ptr)
+{
+    int ret;
+
+    ENTER_PAL_CALL(DkThreadSetAffinity);
+    ret = _DkThreadSetAffinity(pid, len, user_mask_ptr);
+    LEAVE_PAL_CALL_RETURN(ret);
 }

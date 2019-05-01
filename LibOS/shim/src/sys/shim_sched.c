@@ -36,9 +36,40 @@ int shim_do_sched_yield (void)
     return 0;
 }
 
+
+/* Size definition for CPU sets.  */
+# define __OCALL_CPU_SETSIZE	1024
+# define __OCALL_NCPUBITS	    (8 * sizeof (__ocall_cpu_mask))
+
+/* Type for array elements in 'cpu_set_t'.  */
+typedef unsigned long int __ocall_cpu_mask;
+
+/* Basic access functions.  */
+# define __OCALL_CPUELT(cpu) ((cpu) / __OCALL_NCPUBITS)
+# define __OCALL_CPUMASK(cpu) \
+    ((__ocall_cpu_mask) 1 << ((cpu) % __OCALL_NCPUBITS))
+
+# define __OCALL_CPU_ISSET_S(cpu, setsize, cpusetp) \
+    (__extension__ \
+     ({ size_t __cpu = (cpu); \
+      __cpu < 8 * (setsize) \
+      ? ((((const __ocall_cpu_mask *) ((cpusetp)->__bits))[__OCALL_CPUELT (__cpu)] \
+          & __OCALL_CPUMASK (__cpu))) != 0 \
+      : 0; }))
+# define __OCALL_CPU_ISSET(cpu, cpusetp) \
+    __OCALL_CPU_ISSET_S (cpu, sizeof (ms_ocall_cpu_set_t), cpusetp)
+
+/* Data structure to describe CPU mask.  */
+typedef struct
+{
+  __ocall_cpu_mask __bits[__OCALL_CPU_SETSIZE / __OCALL_NCPUBITS];
+} ms_ocall_cpu_set_t;
+
+
 int shim_do_sched_getaffinity (pid_t pid, size_t len,
                                __kernel_cpu_set_t * user_mask_ptr)
 {
+#if 0
     int ncpus = PAL_CB(cpu_info.cpu_num);
     // Check that user_mask_ptr is valid; if not, should return -EFAULT
     if (test_user_memory(user_mask_ptr, len, 1))
@@ -47,4 +78,24 @@ int shim_do_sched_getaffinity (pid_t pid, size_t len,
     for (int i = 0 ; i < ncpus ; i++)
         ((uint8_t *) user_mask_ptr)[i / 8] |= 1 << (i % 8);
     return ncpus;
+#endif
+    int retval;
+    retval = DkThreadGetAffinity(pid, len, user_mask_ptr);
+
+    int i;
+    debug("LUB shim_do_sched_getaffinity user_mask_ptr=%p, retval=%d, pid=%d, mask=",
+           user_mask_ptr, retval, pid);
+    for (i = 0; i < 4; i++) {
+        debug("%d ", __OCALL_CPU_ISSET(i, (ms_ocall_cpu_set_t *)user_mask_ptr));
+    }
+    debug("\n");
+
+    return retval;
+
+}
+
+int shim_do_sched_setaffinity (pid_t pid, size_t len,
+                               __kernel_cpu_set_t * user_mask_ptr)
+{
+    return DkThreadSetAffinity(pid, len, user_mask_ptr);
 }

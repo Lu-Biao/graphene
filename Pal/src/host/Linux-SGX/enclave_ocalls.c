@@ -1108,3 +1108,44 @@ int ocall_load_debug(const char * command)
     sgx_reset_ustack();
     return retval;
 }
+
+int ocall_sched_getaffinity(pid_t pid, size_t len, void *user_mask_ptr)
+{
+    int retval;
+    ms_ocall_sched_affinity_t *ms;
+
+    if (!user_mask_ptr)
+        return -1;
+
+    ms = sgx_alloc_on_ustack(sizeof(*ms));
+    ms->pid = pid;
+    ms->cpusetsize = len;
+    ms->cpuset = sgx_alloc_on_ustack(len);
+
+    retval = sgx_ocall(OCALL_SCHED_GETAFFINITY, ms);
+
+    if (retval != -1)
+        sgx_copy_to_enclave(user_mask_ptr, len, ms->cpuset, retval);
+
+    sgx_reset_ustack();
+    return retval;
+}
+
+int ocall_sched_setaffinity(pid_t pid, size_t len, void *user_mask_ptr)
+{
+    int retval;
+    ms_ocall_sched_affinity_t *ms;
+
+    if (!user_mask_ptr)
+        return -1;
+
+    ms = sgx_alloc_on_ustack(sizeof(*ms));
+    ms->pid = pid;
+    ms->cpusetsize = len;
+    ms->cpuset = sgx_copy_to_ustack(user_mask_ptr, len);
+
+    retval = sgx_ocall(OCALL_SCHED_SETAFFINITY, ms);
+
+    sgx_reset_ustack();
+    return retval;
+}

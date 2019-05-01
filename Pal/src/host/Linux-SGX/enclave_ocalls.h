@@ -103,3 +103,7 @@ int ocall_rename (const char * oldpath, const char * newpath);
 int ocall_delete (const char * pathname);
 
 int ocall_load_debug (const char * command);
+
+int ocall_sched_getaffinity(pid_t pid, size_t len, void * user_mask_ptr);
+
+int ocall_sched_setaffinity(pid_t pid, size_t len, void * user_mask_ptr);

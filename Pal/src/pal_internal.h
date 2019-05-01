@@ -308,6 +308,10 @@ int _DkProcessCreate (PAL_HANDLE * handle, const char * uri,
 void _DkProcessExit (int exitCode);
 int _DkProcessSandboxCreate (const char * manifest, int flags);
 
+int _DkThreadSetAffinity(pid_t pid, size_t len, void * user_mask_ptr);
+int _DkThreadGetAffinity(pid_t pid, size_t len, void * user_mask_ptr);
+
+
 /* DkMutex calls */
 int _DkMutexCreate (PAL_HANDLE * handle, int initialCount);
 int _DkMutexAcquire (PAL_HANDLE sem);
